@@ -1,0 +1,13 @@
+# Ant ignores
+build/
+dist/
+
+# IntelliJ ignores
+*.iml
+*.iws
+.idea/
+
+# Eclipse ignores
+.classpath
+.project
+.settings/
