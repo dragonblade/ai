@@ -9,6 +9,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class BayesianClassifier {
+
+	//	static final int K = 1;
 	static final int K = 7;
 
 	public enum Clazz {
@@ -102,7 +104,7 @@ public class BayesianClassifier {
 
 		int testCount = 0;
 		int corrCount = 0;
-		
+
 		for (int i = 0; i < filesF.length; i++) {
 			Clazz clazz = classifyBlog(new String(Files.readAllBytes(Paths.get(filesF[i].toString()))));
 			boolean corr = clazz == Clazz.FEMALE;
@@ -118,7 +120,7 @@ public class BayesianClassifier {
 			testCount++;
 			corrCount += corr ? 1 : 0;
 		}
-		
+
 		double acc = ((double) corrCount) / ((double) testCount);
 		System.out.println(String.format("Tests: %d, correct: %d, accuracy %.3f", testCount, corrCount, acc));
 	}
