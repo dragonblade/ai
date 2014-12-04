@@ -25,12 +25,24 @@ public class WekaClassifier {
 
 	private NaiveBayesUpdateable classifier;
 
+	/**
+	 * Initialize classifier
+	 *
+	 * @param trainData name of folder with train data files
+	 * @param testData  name of folder with test data files
+	 * @param classes   class names
+	 */
 	public WekaClassifier(String trainData, String testData, List<String> classes) {
 		this.trainData = trainData;
 		this.testData = testData;
 		this.classes = classes;
 	}
 
+	/**
+	 * Build the classifier and train it with the test data set
+	 *
+	 * @throws Exception in case of an error
+	 */
 	public void buildClassifier() throws Exception {
 		// Read raw data
 		this.tokens = new TreeSet<>();
@@ -81,6 +93,12 @@ public class WekaClassifier {
 		classifier.buildClassifier(instances);
 	}
 
+	/**
+	 * Test the classifier and output its accuracy with the test data set. The {@link #buildClassifier()} method has to
+	 * have been run before running this method.
+	 *
+	 * @throws Exception in case of an error
+	 */
 	private void testClassifier() throws Exception {
 		if (tokens == null || classifier == null)
 			throw new RuntimeException("Classifier has not been built yet");
@@ -121,6 +139,16 @@ public class WekaClassifier {
 		System.out.println(String.format("Tests: %d, correct: %d, accuracy %.3f", testCount, corrCount, acc));
 	}
 
+	/**
+	 * Tokenize input string by applying the following transformations:
+	 * - Replace all blocks of whitespace with a single space
+	 * - Convert all characters to lower case
+	 * - Remove all characters that are not alphanumerics or spaces
+	 * - Split the string to tokens
+	 *
+	 * @param input input string
+	 * @return array of tokens
+	 */
 	private String[] tokenizer(String input) {
 		return input
 				.replaceAll("\\s+", " ")
@@ -129,6 +157,12 @@ public class WekaClassifier {
 				.split(" ");
 	}
 
+	/**
+	 * Builds a frequency map from the given array of tokens
+	 *
+	 * @param tokens array of tokens
+	 * @return frequency map
+	 */
 	private Map<String, Integer> buildTokenMap(String[] tokens) {
 		Map<String, Integer> map = new HashMap<>();
 
