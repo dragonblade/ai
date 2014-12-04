@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class BayesianClassifier {
-	static final int K = 1;
+	static final int K = 7;
 
 	public enum Clazz {
 		MALE, FEMALE;
@@ -18,6 +18,13 @@ public class BayesianClassifier {
 	HashMap<String, Integer> female = new HashMap<>();
 	HashMap<String, Integer> male = new HashMap<>();
 
+	/**
+	 * Tokenize input by replacing any form of whitespace with one space, changing upper case letters
+	 * to lower case, removing any token which is not a number or a letter and finally splitting up the 
+	 * input in words. 
+	 * @param input
+	 * @return
+	 */
 	public String[] tokenizer(String input) {
 		return input
 				.replaceAll("\\s+", " ")
@@ -26,6 +33,13 @@ public class BayesianClassifier {
 				.split(" ");
 	}
 
+	/**
+	 * Train classifier by putting each word from the input (train set) in the corresponding hashmap
+	 * (male or female) and set its counter to 1 or increment the counter by 1 when the word is already 
+	 * in the hashmap
+	 * @param clazz
+	 * @param input
+	 */
 	public void train(Clazz clazz, String input) {
 		String[] tokenized = tokenizer(input);
 
@@ -48,6 +62,9 @@ public class BayesianClassifier {
 		}
 	}
 
+	/**
+	 * Load each train set into classifier and give contents of train set to train()
+	 */
 	public void trainBlog() {
 		File[] filesF = new File("blogtrain/F").listFiles();
 		File[] filesM = new File("blogtrain/M").listFiles();
@@ -74,6 +91,11 @@ public class BayesianClassifier {
 
 	}
 
+	/**
+	 * Test classifier by loading test sets, calling classifyBlog() to assign a class (male or female)
+	 * and printing result
+	 * @throws IOException
+	 */
 	public void testBlog() throws IOException {
 		File[] filesF = new File("blogtest/F").listFiles();
 		File[] filesM = new File("blogtest/M").listFiles();
@@ -101,6 +123,13 @@ public class BayesianClassifier {
 		System.out.println(String.format("Tests: %d, correct: %d, accuracy %.3f", testCount, corrCount, acc));
 	}
 
+	/**
+	 * Assign class (male or female) to data by first tokenizing the input and then comparing every word 
+	 * to the words in the hashmaps male and female and calculating the probability that it belongs to 
+	 * one of these classes
+	 * @param data
+	 * @return Clazz
+	 */
 	public Clazz classifyBlog(String data) {
 		Clazz result = null;
 
