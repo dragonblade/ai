@@ -143,31 +143,31 @@ public class InteractiveLearner {
 
 		int v = vocab.size();
 
-		int nm = 0;
+		int ng = 0;
 		for (Integer value : good.values()) {
-			nm += value;
+			ng += value;
 		}
 
-		int nf = 0;
+		int nb = 0;
 		for (Integer value : bad.values()) {
-			nf += value;
+			nb += value;
 		}
 
-		double probM = 0d;
+		double probG = 0d;
 		for (int i = 0; i < tokenized.length; i++) {
-			int freqWordM = good.get(tokenized[i]) == null ? 0 : good.get(tokenized[i]);
-			double probWordM = ((double) (freqWordM + K)) / ((double) (nm + v * K));
-			probM += Math.log(probWordM);
+			int freqWordG = good.get(tokenized[i]) == null ? 0 : good.get(tokenized[i]);
+			double probWordG = ((double) (freqWordG + K)) / ((double) (ng + v * K));
+			probG += Math.log(probWordG);
 		}
 
-		double probF = 0d;
+		double probB = 0d;
 		for (int i = 0; i < tokenized.length; i++) {
-			int freqWordF = bad.get(tokenized[i]) == null ? 0 : bad.get(tokenized[i]);
-			double probWordF = ((double) (freqWordF + K)) / ((double) (nf + v * K));
-			probF += Math.log(probWordF);
+			int freqWordB = bad.get(tokenized[i]) == null ? 0 : bad.get(tokenized[i]);
+			double probWordB = ((double) (freqWordB + K)) / ((double) (nb + v * K));
+			probB += Math.log(probWordB);
 		}
 
-		if (probM > probF) {
+		if (probG > probB) {
 			result = Clazz.GOOD;
 		} else {
 			result = Clazz.BAD;
