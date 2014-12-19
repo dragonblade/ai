@@ -137,42 +137,6 @@ public class WekaFilteredClassifier {
 		System.out.println(String.format("Tests: %d, correct: %d, accuracy: %.3f", testCount, corrCount, acc));
 	}
 
-	/**
-	 * Tokenize input string by applying the following transformations:
-	 * - Replace all blocks of whitespace with a single space
-	 * - Convert all characters to lower case
-	 * - Remove all characters that are not alphanumerics or spaces
-	 * - Split the string to tokens
-	 *
-	 * @param input input string
-	 * @return array of tokens
-	 */
-	private String[] tokenizer(String input) {
-		return input
-				.replaceAll("\\s+", " ")
-				.toLowerCase()
-				.replaceAll("[^a-z0-9 ]", "")
-				.split(" ");
-	}
-
-	/**
-	 * Builds a frequency map from the given array of tokens
-	 *
-	 * @param tokens array of tokens
-	 * @return frequency map
-	 */
-	private Map<String, Integer> buildTokenMap(String[] tokens) {
-		Map<String, Integer> map = new HashMap<>();
-
-		for (String token : tokens)
-			if (map.get(token) == null)
-				map.put(token, 1);
-			else
-				map.put(token, map.get(token) + 1);
-
-		return map;
-	}
-
 	public static void main(String[] args) throws Exception {
 		WekaFilteredClassifier classifier = new WekaFilteredClassifier(
 				NaiveBayes.class, new String[]{},
