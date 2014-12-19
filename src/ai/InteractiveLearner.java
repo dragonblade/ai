@@ -1,185 +1,144 @@
 package ai;
 
+import weka.classifiers.Classifier;
+import weka.classifiers.meta.FilteredClassifier;
+import weka.core.Attribute;
+import weka.core.FastVector;
+import weka.core.Instance;
+import weka.core.Instances;
+import weka.filters.unsupervised.attribute.StringToWordVector;
+
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 
 public class InteractiveLearner {
 
-	//	static final int K = 1;
-	static final int K = 7;
+	private Class<? extends Classifier> classifierType;
 
-	public enum Clazz {
-		GOOD, BAD;
-	}
+	private String[] classifierOptions;
 
-	HashMap<String, Integer> bad = new HashMap<>();
-	HashMap<String, Integer> good = new HashMap<>();
+	private String trainData;
+
+	private List<String> classes;
+
+	private Instances instances;
+
+	private FilteredClassifier classifier;
 
 	/**
-	 * Tokenize input by replacing any form of whitespace with one space, changing upper case letters
-	 * to lower case, removing any token which is not a number or a letter and finally splitting up the 
-	 * input in words. 
-	 * @param input
+	 * Initialize classifier
+	 *
+	 * @param trainData name of folder with train data files
+	 * @param classes   class names
+	 */
+	public InteractiveLearner(Class<? extends Classifier> classifierType, String[] classifierOptions, String trainData,
+							  List<String> classes) {
+		this.classifierType = classifierType;
+		this.classifierOptions = classifierOptions;
+		this.trainData = trainData;
+		this.classes = classes;
+	}
+
+	/**
+	 * Build the train data set into Weka datastructures
+	 *
+	 * @throws Exception in case of an error
+	 */
+	public void buildTrainInstances() throws Exception {
+		// Read raw data
+		Map<String, List<String>> rawData = new HashMap<>();
+		for (String clazz : classes) {
+			rawData.put(clazz, new ArrayList<String>());
+
+			File[] files = new File(trainData + "/" + clazz).listFiles();
+			for (File file : files) {
+				String fileData = new String(Files.readAllBytes(Paths.get(file.toString())));
+				rawData.get(clazz).add(fileData);
+			}
+		}
+
+		// Put rawData in Weka classes
+		FastVector classVector = new FastVector();
+		for (String clazz : classes)
+			classVector.addElement(clazz);
+		FastVector attrs = new FastVector();
+		attrs.addElement(new Attribute("content", (FastVector) null));
+		attrs.addElement(new Attribute("@@class@@", classVector));
+
+		instances = new Instances("Instances", attrs, 0);
+
+		for (int i = 0; i < classes.size(); i++) {
+			String clazz = classes.get(i);
+
+			for (String fileData : rawData.get(clazz)) {
+				double[] instanceValue = new double[2];
+				instanceValue[0] = instances.attribute(0).addStringValue(fileData);
+				instanceValue[1] = i;
+
+				instances.add(new Instance(1.0, instanceValue));
+			}
+		}
+
+		instances.setClassIndex(instances.numAttributes() - 1);
+	}
+
+	/**
+	 * Build the classifier based on the train dataset
+	 *
+	 * @throws Exception if an error has occured
+	 */
+	public void buildClassifier() throws Exception {
+		if (instances == null)
+			throw new RuntimeException("Train dataset has not been processed");
+
+		// Build classifier
+		System.out.println("Building classifier...");
+		classifier = new FilteredClassifier();
+		StringToWordVector filter = new StringToWordVector();
+		filter.setAttributeIndices("first");
+		classifier.setClassifier(this.classifierType.newInstance());
+		classifier.getClassifier().setOptions(classifierOptions);
+		classifier.setFilter(filter);
+		classifier.buildClassifier(instances);
+	}
+
+	/**
+	 * Classify a document and return the expected class of the document
+	 *
+	 * @param document document to classify
 	 * @return
+	 * @throws Exception in case of an error
 	 */
-	public String[] tokenizer(String input) {
-		return input
-				.replaceAll("\\s+", " ")
-				.toLowerCase()
-				.replaceAll("[^a-z0-9 ]", "")
-				.split(" ");
+	public String classifyDocument(String document) throws Exception {
+		if (classifier == null)
+			throw new RuntimeException("Classifier has not been built");
+
+		double[] instanceValue = new double[2];
+		instanceValue[0] = instances.attribute(0).addStringValue(document);
+		instanceValue[1] = 0;
+		Instance testInstance = new Instance(1.0, instanceValue);
+		testInstance.setDataset(instances);
+
+		int result = (int) classifier.classifyInstance(testInstance);
+		return this.classes.get(result);
 	}
 
-	/**
-	 * Train classifier by putting each word from the input (train set) in the corresponding hashmap
-	 * (good or bad) and set its counter to 1 or increment the counter by 1 when the word is already 
-	 * in the hashmap
-	 * @param clazz
-	 * @param input
-	 */
-	public void train(Clazz clazz, String input) {
-		String[] tokenized = tokenizer(input);
+	public void learnDocument(String document, String clazz) throws Exception {
+		if (classifier == null)
+			throw new RuntimeException("Classifier has not been built");
+		if (classes.indexOf(clazz) == -1)
+			throw new RuntimeException("Cannot find specified class");
 
-		for (int i = 0; i < tokenized.length; i++) {
-			String token = tokenized[i];
+		double[] instanceValue = new double[2];
+		instanceValue[0] = instances.attribute(0).addStringValue(document);
+		instanceValue[1] = classes.indexOf(clazz);
 
-			if (clazz == Clazz.GOOD) {
-				if (good.get(token) == null) {
-					good.put(token, 1);
-				} else {
-					good.put(token, good.get(token) + 1);
-				}
-			} else {
-				if (bad.get(token) == null) {
-					bad.put(token, 1);
-				} else {
-					bad.put(token, bad.get(token) + 1);
-				}
-			}
-		}
-	}
-
-	/**
-	 * Load each train set into classifier and give contents of train set to train()
-	 */
-	public void trainRecipe() {
-		File[] filesB = new File("rectrain/B").listFiles();
-		File[] filesG = new File("rectrain/G").listFiles();
-
-		for (int i = 0; i < filesB.length; i++) {
-			try {
-				String data = new String(Files.readAllBytes(Paths.get(filesB[i].toString())));
-
-				train(Clazz.BAD, data);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-
-		for (int i = 0; i < filesG.length; i++) {
-			try {
-				String data = new String(Files.readAllBytes(Paths.get(filesG[i].toString())));
-
-				train(Clazz.GOOD, data);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-
-	}
-
-	/**
-	 * Test classifier by loading test sets, calling classifyBlog() to assign a class (good or bad)
-	 * and printing result
-	 * @throws IOException
-	 */
-	public void testRecipe() throws IOException {
-		File[] filesB = new File("rectest/B").listFiles();
-		File[] filesG = new File("rectest/G").listFiles();
-
-		int testCount = 0;
-		int corrCount = 0;
-
-		for (int i = 0; i < filesB.length; i++) {
-			Clazz clazz = classifyRecipe(new String(Files.readAllBytes(Paths.get(filesB[i].toString()))));
-			boolean corr = clazz == Clazz.BAD;
-			System.out.println(String.format("%-30s %6s %5s", filesB[i].toString(), clazz, corr));
-			testCount++;
-			corrCount += corr ? 1 : 0;
-		}
-
-		for (int i = 0; i < filesG.length; i++) {
-			Clazz clazz = classifyRecipe(new String(Files.readAllBytes(Paths.get(filesG[i].toString()))));
-			boolean corr = clazz == Clazz.GOOD;
-			System.out.println(String.format("%-30s %6s %5s", filesG[i].toString(), clazz, corr));
-			testCount++;
-			corrCount += corr ? 1 : 0;
-		}
-
-		double acc = ((double) corrCount) / ((double) testCount);
-		System.out.println(String.format("Tests: %d, correct: %d, accuracy %.3f", testCount, corrCount, acc));
-	}
-
-	/**
-	 * Assign class (good or bad) to data by first tokenizing the input and then comparing every word 
-	 * to the words in the hashmaps good and bad and calculating the probability that it belongs to 
-	 * one of these classes
-	 * @param data
-	 * @return Clazz
-	 */
-	public Clazz classifyRecipe(String data) {
-		Clazz result = null;
-
-		String[] tokenized = tokenizer(data);
-
-		Set<String> vocab = new HashSet<>();
-		vocab.addAll(bad.keySet());
-		vocab.addAll(good.keySet());
-
-		int v = vocab.size();
-
-		int ng = 0;
-		for (Integer value : good.values()) {
-			ng += value;
-		}
-
-		int nb = 0;
-		for (Integer value : bad.values()) {
-			nb += value;
-		}
-
-		double probG = 0d;
-		for (int i = 0; i < tokenized.length; i++) {
-			int freqWordG = good.get(tokenized[i]) == null ? 0 : good.get(tokenized[i]);
-			double probWordG = ((double) (freqWordG + K)) / ((double) (ng + v * K));
-			probG += Math.log(probWordG);
-		}
-
-		double probB = 0d;
-		for (int i = 0; i < tokenized.length; i++) {
-			int freqWordB = bad.get(tokenized[i]) == null ? 0 : bad.get(tokenized[i]);
-			double probWordB = ((double) (freqWordB + K)) / ((double) (nb + v * K));
-			probB += Math.log(probWordB);
-		}
-
-		if (probG > probB) {
-			result = Clazz.GOOD;
-		} else {
-			result = Clazz.BAD;
-		}
-
-		return result;
-	}
-
-	public static void main(String[] args) throws IOException {
-		InteractiveLearner test = new InteractiveLearner();
-		test.trainRecipe();
-		test.testRecipe();
+		instances.add(new Instance(1.0, instanceValue));
+		buildClassifier();
 	}
 }
-
