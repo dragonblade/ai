@@ -1,6 +1,6 @@
 package ai;
 
-import weka.classifiers.bayes.NaiveBayes;
+import weka.classifiers.trees.J48;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,7 +21,7 @@ public class InteractiveLearnerGUI extends JFrame implements ActionListener {
 
 	public InteractiveLearnerGUI() {
 		try {
-			classifier = new InteractiveLearner(NaiveBayes.class, new String[]{}, "rectrain", Arrays.asList("B", "G"));
+			classifier = new InteractiveLearner(J48.class, new String[]{}, "rectrain", Arrays.asList("B", "G"));
 			classifier.buildTrainInstances();
 			classifier.buildClassifier();
 
@@ -107,7 +107,7 @@ public class InteractiveLearnerGUI extends JFrame implements ActionListener {
 				if ("G".equals(clazz))
 					lbResult.setText("I think you would like this recipe");
 				else
-					lbResult.setText("I think you would would not like this recipe");
+					lbResult.setText("I think you would not like this recipe");
 
 				lbResult.setVisible(true);
 				lbQuestion.setVisible(true);
