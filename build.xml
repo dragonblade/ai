@@ -41,6 +41,17 @@
         </java>
     </target>
 
+    <target name="run-d" depends="compile" description="Run the interactive learner of part B">
+        <java classname="ai.InteractiveLearnerGUI" fork="true">
+            <classpath>
+                <pathelement path="${build}"/>
+                <fileset dir="${lib}">
+                    <include name="**/*.jar"/>
+                </fileset>
+            </classpath>
+        </java>
+    </target>
+
     <target name="clean" description="clean up">
         <delete dir="${build}"/>
     </target>
